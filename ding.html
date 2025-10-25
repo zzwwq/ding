@@ -1,11 +1,10 @@
-<!--  测试-->
+
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>钉钉机器人消息发送器 - 移动端优化版</title>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>钉钉消息发送器 (Python 2.7)</title>
     <style>
         :root {
             --primary-color: #1e5799;
@@ -16,7 +15,6 @@
             --border-color: #e1e5eb;
             --success-color: #52c41a;
             --error-color: #ff4d4f;
-            --warning-color: #faad14;
         }
         
         * {
@@ -77,11 +75,6 @@
             font-weight: 600;
         }
         
-        .section-title i {
-            margin-right: 8px;
-            font-size: 1.1rem;
-        }
-        
         .form-group {
             margin-bottom: 18px;
         }
@@ -99,7 +92,7 @@
             padding: 14px 16px;
             border: 2px solid var(--border-color);
             border-radius: 10px;
-            font-size: 16px; /* 防止iOS缩放 */
+            font-size: 16px;
             transition: all 0.3s;
             background: white;
         }
@@ -224,11 +217,6 @@
             transform: scale(0.98);
         }
         
-        button i {
-            margin-right: 8px;
-            font-size: 1.1rem;
-        }
-        
         .send-btn {
             background: var(--primary-color);
             color: white;
@@ -297,15 +285,6 @@
             font-size: 0.9rem;
         }
         
-        .form-row {
-            display: flex;
-            gap: 12px;
-        }
-        
-        .form-col {
-            flex: 1;
-        }
-        
         .save-config {
             display: flex;
             align-items: center;
@@ -317,7 +296,6 @@
             margin-right: 8px;
         }
         
-        /* 移动端特定优化 */
         @media (max-width: 480px) {
             body {
                 padding: 10px;
@@ -336,11 +314,6 @@
                 flex-direction: column;
             }
             
-            .form-row {
-                flex-direction: column;
-                gap: 10px;
-            }
-            
             .preview-item {
                 width: 80px;
                 height: 80px;
@@ -350,35 +323,15 @@
                 padding: 25px 15px;
             }
         }
-        
-        /* 防止iOS缩放 */
-        @media screen and (-webkit-min-device-pixel-ratio:0) {
-            select,
-            textarea,
-            input {
-                font-size: 16px;
-            }
-        }
-        
-        /* 长按菜单优化 */
-        .context-menu {
-            -webkit-touch-callout: none;
-            -webkit-user-select: none;
-            -khtml-user-select: none;
-            -moz-user-select: none;
-            -ms-user-select: none;
-            user-select: none;
-        }
     </style>
 </head>
-<body class="context-menu">
+<body>
     <h1>钉钉消息发送器</h1>
-    <p class="subtitle">移动端优化版 - 支持手机相册选图</p>
+    <p class="subtitle">Python 2.7 兼容版</p>
     
     <div class="container">
         <div class="config-section">
             <div class="section-title">
-                <i class="fas fa-robot"></i>
                 <span>机器人配置</span>
             </div>
             
@@ -392,26 +345,6 @@
                 <input type="password" id="secret" class="input-field" placeholder="机器人加签Secret">
             </div>
             
-            <div class="form-group">
-                <label for="githubToken">GitHub Token：</label>
-                <input type="password" id="githubToken" class="input-field" placeholder="GitHub Personal Access Token">
-            </div>
-            
-            <div class="form-row">
-                <div class="form-col">
-                    <div class="form-group">
-                        <label for="repoOwner">GitHub用户名：</label>
-                        <input type="text" id="repoOwner" class="input-field" placeholder="您的GitHub用户名">
-                    </div>
-                </div>
-                <div class="form-col">
-                    <div class="form-group">
-                        <label for="repoName">仓库名称：</label>
-                        <input type="text" id="repoName" class="input-field" placeholder="GitHub仓库名称">
-                    </div>
-                </div>
-            </div>
-            
             <div class="save-config">
                 <input type="checkbox" id="saveConfig">
                 <label for="saveConfig">保存配置到本地</label>
@@ -420,7 +353,6 @@
         
         <div class="config-section">
             <div class="section-title">
-                <i class="fas fa-comment-dots"></i>
                 <span>消息内容</span>
             </div>
             
@@ -432,9 +364,9 @@
             <div class="form-group">
                 <label>添加图片：</label>
                 <div class="image-upload" id="uploadArea">
-                    <i class="fas fa-camera"></i>
+                    <div>📷</div>
                     <p>点击选择图片或拍照</p>
-                    <input type="file" id="imageInput" accept="image/*" multiple style="display: none;">
+                    <input type="file" id="imageInput" accept="image/*" style="display: none;">
                 </div>
                 <div class="image-preview-container" id="imagePreviewContainer">
                     <div class="image-preview" id="imagePreview">
@@ -449,10 +381,10 @@
         
         <div class="button-group">
             <button class="send-btn" id="sendBtn">
-                <i class="fas fa-paper-plane"></i> 发送消息
+                发送消息
             </button>
             <button class="clear-btn" id="clearBtn">
-                <i class="fas fa-trash-alt"></i> 清空
+                清空
             </button>
         </div>
         
@@ -465,10 +397,10 @@
                 <li>输入消息内容（可选）</li>
                 <li>点击相机图标添加图片（支持多选）</li>
                 <li>点击"发送消息"按钮</li>
-                <li>图片将自动上传到GitHub仓库</li>
+                <li>图片将自动转换为Base64格式发送</li>
             </ol>
             <p style="margin-top: 10px; font-size: 0.85rem; color: #666;">
-                提示：长按图片可查看大图，首次使用请确保已填写所有配置信息。
+                提示：系统会自动压缩大图片，确保消息长度符合要求。
             </p>
         </div>
     </div>
@@ -478,9 +410,6 @@
             // 获取DOM元素
             const webhookInput = document.getElementById('webhook');
             const secretInput = document.getElementById('secret');
-            const githubTokenInput = document.getElementById('githubToken');
-            const repoOwnerInput = document.getElementById('repoOwner');
-            const repoNameInput = document.getElementById('repoName');
             const messageInput = document.getElementById('message');
             const imageInput = document.getElementById('imageInput');
             const uploadArea = document.getElementById('uploadArea');
@@ -518,9 +447,9 @@
                         continue;
                     }
                     
-                    // 检查文件大小（钉钉推荐小于1MB）
+                    // 检查文件大小
                     if (file.size > 2 * 1024 * 1024) {
-                        showStatus(`图片 "${file.name}" 较大，正在压缩...`, 'loading');
+                        showStatus('图片较大，正在压缩...', 'loading');
                         compressImage(file, 1024, 0.7).then(compressedFile => {
                             addImageToSelection(compressedFile);
                             if (i === files.length - 1) {
@@ -529,7 +458,7 @@
                             }
                         }).catch(error => {
                             console.error('图片压缩失败:', error);
-                            showStatus(`图片 "${file.name}" 压缩失败，已跳过`, 'error');
+                            showStatus('图片压缩失败，已跳过', 'error');
                         });
                     } else {
                         addImageToSelection(file);
@@ -553,7 +482,7 @@
                     
                     const removeBtn = document.createElement('div');
                     removeBtn.className = 'remove-image';
-                    removeBtn.innerHTML = '<i class="fas fa-times"></i>';
+                    removeBtn.innerHTML = '×';
                     removeBtn.addEventListener('click', function(e) {
                         e.stopPropagation();
                         removeImageFromSelection(file);
@@ -561,18 +490,6 @@
                         if (selectedImages.length === 0) {
                             imagePreviewContainer.style.display = 'none';
                         }
-                    });
-                    
-                    // 长按查看大图
-                    let pressTimer;
-                    previewItem.addEventListener('touchstart', function(e) {
-                        pressTimer = setTimeout(function() {
-                            showImageModal(e.target.result);
-                        }, 500);
-                    });
-                    
-                    previewItem.addEventListener('touchend', function() {
-                        clearTimeout(pressTimer);
                     });
                     
                     previewItem.appendChild(img);
@@ -610,25 +527,17 @@
             
             // 发送消息
             sendBtn.addEventListener('click', function() {
-                const webhookUrl = webhookInput.value.trim();
+                const webhook = webhookInput.value.trim();
                 const secret = secretInput.value.trim();
-                const githubToken = githubTokenInput.value.trim();
-                const repoOwner = repoOwnerInput.value.trim();
-                const repoName = repoNameInput.value.trim();
                 const message = messageInput.value.trim();
                 
-                if (!webhookUrl) {
+                if (!webhook) {
                     showStatus('请输入钉钉机器人的Webhook地址', 'error');
                     return;
                 }
                 
                 if (!secret) {
                     showStatus('请输入加签密钥', 'error');
-                    return;
-                }
-                
-                if (!githubToken || !repoOwner || !repoName) {
-                    showStatus('请填写完整的GitHub配置信息', 'error');
                     return;
                 }
                 
@@ -642,171 +551,55 @@
                     saveConfigToLocal();
                 }
                 
-                sendMessage(webhookUrl, secret, githubToken, repoOwner, repoName, message, selectedImages);
+                sendMessage(webhook, secret, message, selectedImages);
             });
             
-            // 发送消息到钉钉
-            async function sendMessage(webhookUrl, secret, githubToken, repoOwner, repoName, message, imageFiles) {
+            // 发送消息到后端
+            async function sendMessage(webhook, secret, message, imageFiles) {
                 showStatus('准备发送消息...', 'loading');
                 
                 try {
-                    let imageUrls = [];
+                    let imageBase64 = null;
                     
-                    // 如果有图片，先上传到GitHub
+                    // 如果有图片，转换为Base64
                     if (imageFiles.length > 0) {
-                        showStatus(`正在上传 ${imageFiles.length} 张图片到GitHub...`, 'loading');
+                        showStatus('正在处理图片...', 'loading');
                         
-                        for (let i = 0; i < imageFiles.length; i++) {
-                            showStatus(`上传图片 ${i+1}/${imageFiles.length}...`, 'loading');
-                            const imageUrl = await uploadImageToGitHub(githubToken, repoOwner, repoName, imageFiles[i]);
-                            
-                            if (imageUrl) {
-                                imageUrls.push(imageUrl);
-                            } else {
-                                showStatus(`图片 ${i+1} 上传失败，已跳过`, 'error');
-                            }
-                        }
+                        // 只使用第一张图片（简化处理）
+                        const imageFile = imageFiles[0];
+                        imageBase64 = await fileToBase64(imageFile);
                         
-                        if (imageUrls.length === 0) {
-                            showStatus('所有图片上传失败，无法发送消息', 'error');
-                            return;
-                        }
-                        
-                        showStatus('图片上传完成，正在发送消息...', 'loading');
+                        showStatus('图片处理完成，正在发送消息...', 'loading');
                     }
                     
-                    // 构建消息体
-                    let payload = {};
-                    const timestamp = Date.now().toString();
-                    const sign = computeSignature(secret, timestamp);
-                    const signedWebhookUrl = `${webhookUrl}&timestamp=${timestamp}&sign=${sign}`;
-                    
-                    if (imageUrls.length > 0 && message) {
-                        // 同时发送图片和文本
-                        let imageText = imageUrls.map(url => `![图片](${url})`).join('\n');
-                        payload = {
-                            msgtype: "markdown",
-                            markdown: {
-                                title: "来自移动端的消息",
-                                text: `${imageText}\n\n${message}`
-                            }
-                        };
-                    } else if (imageUrls.length > 0) {
-                        // 只发送图片
-                        let imageText = imageUrls.map(url => `![图片](${url})`).join('\n');
-                        payload = {
-                            msgtype: "markdown",
-                            markdown: {
-                                title: "来自移动端的图片",
-                                text: imageText
-                            }
-                        };
-                    } else {
-                        // 只发送文本
-                        payload = {
-                            msgtype: "text",
-                            text: {
-                                content: message
-                            }
-                        };
-                    }
-                    
-                    // 发送消息到钉钉
-                    const response = await fetch(signedWebhookUrl, {
+                    // 发送到后端API
+                    const response = await fetch('http://localhost:5000/api/send-dingtalk', {
                         method: 'POST',
                         headers: {
-                            'Content-Type': 'application/json'
+                            'Content-Type': 'application/json',
                         },
-                        body: JSON.stringify(payload)
+                        body: JSON.stringify({
+                            webhook: webhook,
+                            secret: secret,
+                            message: message,
+                            imageBase64: imageBase64
+                        })
                     });
                     
-                    const data = await response.json();
+                    const result = await response.json();
                     
-                    if (data.errcode === 0) {
+                    if (result.errcode === 0) {
                         showStatus('消息发送成功！', 'success');
                         // 清空已发送的图片
                         selectedImages = [];
                         imagePreview.innerHTML = '';
                         imagePreviewContainer.style.display = 'none';
                     } else {
-                        showStatus(`发送失败: ${data.errmsg}`, 'error');
+                        showStatus('发送失败: ' + result.errmsg, 'error');
                     }
                 } catch (error) {
                     console.error('Error:', error);
                     showStatus('发送失败，请检查网络连接和配置信息', 'error');
-                }
-            }
-            
-            // 计算加签
-            function computeSignature(secret, timestamp) {
-                const crypto = window.crypto || window.msCrypto;
-                const encoder = new TextEncoder();
-                const data = encoder.encode(timestamp + '\n' + secret);
-                
-                return crypto.subtle.importKey(
-                    'raw',
-                    encoder.encode(secret),
-                    { name: 'HMAC', hash: 'SHA-256' },
-                    false,
-                    ['sign']
-                ).then(key => {
-                    return crypto.subtle.sign('HMAC', key, data);
-                }).then(signature => {
-                    // 将签名转换为Base64
-                    const byteArray = new Uint8Array(signature);
-                    let binary = '';
-                    for (let i = 0; i < byteArray.length; i++) {
-                        binary += String.fromCharCode(byteArray[i]);
-                    }
-                    return btoa(binary);
-                }).catch(error => {
-                    console.error('加签计算失败:', error);
-                    return '';
-                });
-            }
-            
-            // 上传图片到GitHub
-            async function uploadImageToGitHub(token, owner, repo, imageFile) {
-                try {
-                    // 生成唯一文件名
-                    const timestamp = new Date().getTime();
-                    const randomStr = Math.random().toString(36).substring(2, 8);
-                    const fileExtension = imageFile.name.split('.').pop() || 'jpg';
-                    const fileName = `image_${timestamp}_${randomStr}.${fileExtension}`;
-                    const filePath = `images/${fileName}`;
-                    
-                    // 将图片转换为Base64
-                    const base64Content = await fileToBase64(imageFile);
-                    const base64Data = base64Content.replace(/^data:image\/\w+;base64,/, '');
-                    
-                    // 构建GitHub API请求
-                    const apiUrl = `https://api.github.com/repos/${owner}/${repo}/contents/${filePath}`;
-                    
-                    const response = await fetch(apiUrl, {
-                        method: 'PUT',
-                        headers: {
-                            'Authorization': `token ${token}`,
-                            'Content-Type': 'application/json'
-                        },
-                        body: JSON.stringify({
-                            message: `Add image: ${fileName}`,
-                            content: base64Data,
-                            branch: 'main'
-                        })
-                    });
-                    
-                    const data = await response.json();
-                    
-                    if (data.content) {
-                        // 返回GitHub Pages URL
-                        return `https://${owner}.github.io/${repo}/images/${fileName}`;
-                    } else {
-                        console.error('图片上传失败:', data);
-                        return null;
-                    }
-                } catch (error) {
-                    console.error('上传图片到GitHub时出错:', error);
-                    return null;
                 }
             }
             
@@ -858,45 +651,11 @@
                 });
             }
             
-            // 显示图片模态框（长按查看大图）
-            function showImageModal(imageSrc) {
-                // 创建模态框
-                const modal = document.createElement('div');
-                modal.style.position = 'fixed';
-                modal.style.top = '0';
-                modal.style.left = '0';
-                modal.style.width = '100%';
-                modal.style.height = '100%';
-                modal.style.backgroundColor = 'rgba(0,0,0,0.8)';
-                modal.style.display = 'flex';
-                modal.style.alignItems = 'center';
-                modal.style.justifyContent = 'center';
-                modal.style.zIndex = '1000';
-                
-                const img = document.createElement('img');
-                img.src = imageSrc;
-                img.style.maxWidth = '90%';
-                img.style.maxHeight = '90%';
-                img.style.borderRadius = '8px';
-                
-                modal.appendChild(img);
-                
-                // 点击关闭
-                modal.addEventListener('click', function() {
-                    document.body.removeChild(modal);
-                });
-                
-                document.body.appendChild(modal);
-            }
-            
             // 保存配置到本地存储
             function saveConfigToLocal() {
                 const config = {
                     webhook: webhookInput.value,
-                    secret: secretInput.value,
-                    githubToken: githubTokenInput.value,
-                    repoOwner: repoOwnerInput.value,
-                    repoName: repoNameInput.value
+                    secret: secretInput.value
                 };
                 localStorage.setItem('dingtalkBotConfig', JSON.stringify(config));
             }
@@ -908,9 +667,6 @@
                     const config = JSON.parse(savedConfig);
                     webhookInput.value = config.webhook || '';
                     secretInput.value = config.secret || '';
-                    githubTokenInput.value = config.githubToken || '';
-                    repoOwnerInput.value = config.repoOwner || '';
-                    repoNameInput.value = config.repoName || '';
                     saveConfigCheckbox.checked = true;
                 }
             }
@@ -929,5 +685,4 @@
         });
     </script>
 </body>
-
-</html>s
+</html>
