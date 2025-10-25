@@ -458,311 +458,332 @@
     </div>
 
     <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            // 获取DOM元素
-            const webhookInput = document.getElementById('webhook');
-            const secretInput = document.getElementById('secret');
-            const messageInput = document.getElementById('message');
-            const imageInput = document.getElementById('imageInput');
-            const uploadArea = document.getElementById('uploadArea');
-            const imagePreviewContainer = document.getElementById('imagePreviewContainer');
-            const imagePreview = document.getElementById('imagePreview');
-            const removeAllImages = document.getElementById('removeAllImages');
-            const sendBtn = document.getElementById('sendBtn');
-            const clearBtn = document.getElementById('clearBtn');
-            const status = document.getElementById('status');
-            const saveConfigCheckbox = document.getElementById('saveConfig');
-            const configStatus = document.getElementById('configStatus');
+document.addEventListener('DOMContentLoaded', function() {
+    // 获取DOM元素
+    const webhookInput = document.getElementById('webhook');
+    const secretInput = document.getElementById('secret');
+    const messageInput = document.getElementById('message');
+    const imageInput = document.getElementById('imageInput');
+    const uploadArea = document.getElementById('uploadArea');
+    const imagePreviewContainer = document.getElementById('imagePreviewContainer');
+    const imagePreview = document.getElementById('imagePreview');
+    const removeAllImages = document.getElementById('removeAllImages');
+    const sendBtn = document.getElementById('sendBtn');
+    const clearBtn = document.getElementById('clearBtn');
+    const status = document.getElementById('status');
+    const saveConfigCheckbox = document.getElementById('saveConfig');
+    const configStatus = document.getElementById('configStatus');
+    
+    let selectedImages = [];
+    let currentImageUrl = null;
+    
+    // 动态获取后端API地址
+    function getBackendUrl() {
+        // 如果当前是8000端口，后端在5000端口
+        if (window.location.port === '8000') {
+            return 'http://' + window.location.hostname + ':5000';
+        }
+        // 否则使用当前地址
+        return window.location.origin;
+    }
+    
+    const backendUrl = getBackendUrl();
+    console.log('后端API地址:', backendUrl);
+    
+    // 检查系统配置
+    checkSystemConfig();
+    
+    // 加载保存的配置
+    loadSavedConfig();
+    
+    // 检查系统配置
+    async function checkSystemConfig() {
+        try {
+            const response = await fetch(backendUrl + '/config');
+            const config = await response.json();
             
-            let selectedImages = [];
-            let currentImageUrl = null;
+            if (config.github_configured) {
+                configStatus.innerHTML = 
+                    '✅ Gitee图床已配置: ' + config.repo_owner + '/' + config.repo_name;
+                configStatus.className = 'config-status config-ok';
+            } else {
+                configStatus.innerHTML = 
+                    '❌ Gitee图床未配置，请编辑config.py文件设置Gitee信息';
+                configStatus.className = 'config-status config-warning';
+            }
             
-            // 检查系统配置
-            checkSystemConfig();
-            
-            // 加载保存的配置
-            loadSavedConfig();
-            
-            // 检查系统配置
-            async function checkSystemConfig() {
-                try {
-                    const response = await fetch('/config');
-                    const config = await response.json();
-                    
-                    if (config.github_configured) {
-                        configStatus.innerHTML = 
-                            '✅ GitHub图床已配置: ' + config.repo_owner + '/' + config.repo_name;
-                        configStatus.className = 'config-status config-ok';
-                    } else {
-                        configStatus.innerHTML = 
-                            '❌ GitHub图床未配置，请编辑config.py文件设置GitHub信息';
-                        configStatus.className = 'config-status config-warning';
-                    }
-                    
-                    if (config.dingtalk_configured) {
-                        // 如果有默认配置，可以自动填充
-                        if (!webhookInput.value) {
-                            webhookInput.placeholder = '已设置默认Webhook（可选填）';
-                        }
-                        if (!secretInput.value) {
-                            secretInput.placeholder = '已设置默认Secret（可选填）';
-                        }
-                    }
-                    
-                } catch (error) {
-                    configStatus.innerHTML = '❌ 无法获取系统配置: ' + error;
-                    configStatus.className = 'config-status config-warning';
+            if (config.dingtalk_configured) {
+                // 如果有默认配置，可以自动填充
+                if (!webhookInput.value) {
+                    webhookInput.placeholder = '已设置默认Webhook（可选填）';
+                }
+                if (!secretInput.value) {
+                    secretInput.placeholder = '已设置默认Secret（可选填）';
                 }
             }
             
-            // 上传区域点击事件
-            uploadArea.addEventListener('click', function() {
-                imageInput.click();
-            });
-            
-            // 文件选择事件 - 支持多选
-            imageInput.addEventListener('change', function() {
-                if (this.files && this.files.length > 0) {
-                    handleImageFiles(this.files);
-                }
-            });
-            
-            // 处理多个图片文件
-            function handleImageFiles(files) {
-                // 清空之前的图片
-                selectedImages = [];
-                currentImageUrl = null;
-                imagePreview.innerHTML = '';
-                
-                for (let i = 0; i < files.length; i++) {
-                    const file = files[i];
-                    if (!file.type.match('image.*')) {
-                        showStatus('请选择图片文件', 'error');
-                        continue;
-                    }
-                    
-                    // 直接添加图片，不压缩
-                    addImageToSelection(file);
-                    
-                    // 上传到GitHub
-                    if (i === 0) { // 只上传第一张图片
-                        uploadImageToGitHub(file);
-                    }
-                }
+        } catch (error) {
+            configStatus.innerHTML = '❌ 无法获取系统配置: ' + error;
+            configStatus.className = 'config-status config-warning';
+        }
+    }
+    
+    // 上传区域点击事件
+    uploadArea.addEventListener('click', function() {
+        imageInput.click();
+    });
+    
+    // 文件选择事件 - 支持多选
+    imageInput.addEventListener('change', function() {
+        if (this.files && this.files.length > 0) {
+            handleImageFiles(this.files);
+            // 重置input值，允许选择相同文件
+            this.value = '';
+        }
+    });
+    
+    // 处理多个图片文件
+    function handleImageFiles(files) {
+        // 清空之前的图片
+        selectedImages = [];
+        currentImageUrl = null;
+        imagePreview.innerHTML = '';
+        
+        for (let i = 0; i < files.length; i++) {
+            const file = files[i];
+            if (!file.type.match('image.*')) {
+                showStatus('请选择图片文件', 'error');
+                continue;
             }
             
-            // 添加图片到选择列表
-            function addImageToSelection(file) {
-                selectedImages.push(file);
-                
-                // 创建预览元素
-                const reader = new FileReader();
-                reader.onload = function(e) {
-                    const previewItem = document.createElement('div');
-                    previewItem.className = 'preview-item';
-                    
-                    const img = document.createElement('img');
-                    img.src = e.target.result;
-                    img.alt = '图片预览';
-                    
-                    const removeBtn = document.createElement('div');
-                    removeBtn.className = 'remove-image';
-                    removeBtn.innerHTML = '×';
-                    removeBtn.addEventListener('click', function(e) {
-                        e.stopPropagation();
-                        removeImageFromSelection(file);
-                        previewItem.remove();
-                        if (selectedImages.length === 0) {
-                            imagePreviewContainer.style.display = 'none';
-                            currentImageUrl = null;
-                        }
-                    });
-                    
-                    previewItem.appendChild(img);
-                    previewItem.appendChild(removeBtn);
-                    imagePreview.appendChild(previewItem);
-                    
-                    imagePreviewContainer.style.display = 'block';
-                    removeAllImages.style.display = 'block';
-                };
-                reader.readAsDataURL(file);
-            }
+            // 直接添加图片，不压缩
+            addImageToSelection(file);
             
-            // 上传图片到GitHub
-            async function uploadImageToGitHub(file) {
-                showStatus('正在上传图片到GitHub...', 'loading');
-                
-                try {
-                    // 将图片转换为Base64
-                    const imageData = await fileToBase64(file);
-                    
-                    const response = await fetch('http://localhost:5000/api/upload-image', {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                        },
-                        body: JSON.stringify({
-                            imageData: imageData,
-                            fileName: file.name
-                        })
-                    });
-                    
-                    const result = await response.json();
-                    
-                    if (result.errcode === 0) {
-                        currentImageUrl = result.imageUrl;
-                        showStatus('图片上传成功!', 'success');
-                        setTimeout(hideStatus, 2000);
-                    } else {
-                        showStatus('图片上传失败: ' + result.errmsg, 'error');
-                    }
-                } catch (error) {
-                    console.error('上传失败:', error);
-                    showStatus('图片上传失败，请检查网络连接', 'error');
-                }
+            // 上传到Gitee - 只上传第一张图片
+            if (i === 0) {
+                uploadImageToGitee(file);
             }
+        }
+    }
+    
+    // 添加图片到选择列表
+    function addImageToSelection(file) {
+        selectedImages.push(file);
+        
+        // 创建预览元素
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            const previewItem = document.createElement('div');
+            previewItem.className = 'preview-item';
             
-            // 从选择列表中移除图片
-            function removeImageFromSelection(fileToRemove) {
-                selectedImages = selectedImages.filter(file => file !== fileToRemove);
+            const img = document.createElement('img');
+            img.src = e.target.result;
+            img.alt = '图片预览';
+            
+            const removeBtn = document.createElement('div');
+            removeBtn.className = 'remove-image';
+            removeBtn.innerHTML = '×';
+            removeBtn.addEventListener('click', function(e) {
+                e.stopPropagation();
+                removeImageFromSelection(file);
+                previewItem.remove();
                 if (selectedImages.length === 0) {
+                    imagePreviewContainer.style.display = 'none';
                     currentImageUrl = null;
                 }
-            }
+            });
             
-            // 清除所有图片
-            removeAllImages.addEventListener('click', function() {
+            previewItem.appendChild(img);
+            previewItem.appendChild(removeBtn);
+            imagePreview.appendChild(previewItem);
+            
+            imagePreviewContainer.style.display = 'block';
+            removeAllImages.style.display = 'block';
+        };
+        reader.readAsDataURL(file);
+    }
+    
+    // 上传图片到Gitee
+    async function uploadImageToGitee(file) {
+        showStatus('正在上传图片到Gitee...', 'loading');
+        
+        try {
+            // 将图片转换为Base64
+            const imageData = await fileToBase64(file);
+            
+            const response = await fetch(backendUrl + '/api/upload-image', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    imageData: imageData,
+                    fileName: file.name
+                })
+            });
+            
+            const result = await response.json();
+            
+            if (result.errcode === 0) {
+                currentImageUrl = result.imageUrl;
+                showStatus('图片上传成功!', 'success');
+                setTimeout(hideStatus, 2000);
+            } else {
+                showStatus('图片上传失败: ' + result.errmsg, 'error');
+            }
+        } catch (error) {
+            console.error('上传失败:', error);
+            showStatus('图片上传失败，请检查网络连接', 'error');
+        }
+    }
+    
+    // 从选择列表中移除图片
+    function removeImageFromSelection(fileToRemove) {
+        selectedImages = selectedImages.filter(file => file !== fileToRemove);
+        if (selectedImages.length === 0) {
+            currentImageUrl = null;
+        }
+    }
+    
+    // 清除所有图片
+    removeAllImages.addEventListener('click', function() {
+        selectedImages = [];
+        currentImageUrl = null;
+        imagePreview.innerHTML = '';
+        imagePreviewContainer.style.display = 'none';
+        // 同时重置文件输入框
+        imageInput.value = '';
+    });
+    
+    // 清空按钮
+    clearBtn.addEventListener('click', function() {
+        if (confirm('确定要清空所有内容吗？')) {
+            selectedImages = [];
+            currentImageUrl = null;
+            imagePreview.innerHTML = '';
+            imagePreviewContainer.style.display = 'none';
+            messageInput.value = '';
+            // 重置文件输入框
+            imageInput.value = '';
+            hideStatus();
+        }
+    });
+    
+    // 发送消息
+    sendBtn.addEventListener('click', function() {
+        const webhook = webhookInput.value.trim();
+        const secret = secretInput.value.trim();
+        const message = messageInput.value.trim();
+        
+        if (!webhook) {
+            showStatus('请输入钉钉机器人的Webhook地址', 'error');
+            return;
+        }
+        
+        if (!secret) {
+            showStatus('请输入加签密钥', 'error');
+            return;
+        }
+        
+        if (!message && !currentImageUrl) {
+            showStatus('请输入消息内容或添加图片', 'error');
+            return;
+        }
+        
+        // 如果有图片但还未上传完成
+        if (selectedImages.length > 0 && !currentImageUrl) {
+            showStatus('图片正在上传中，请稍后...', 'error');
+            return;
+        }
+        
+        // 保存配置到本地存储
+        if (saveConfigCheckbox.checked) {
+            saveConfigToLocal();
+        }
+        
+        sendMessage(webhook, secret, message, currentImageUrl);
+    });
+    
+    // 发送消息到后端
+    async function sendMessage(webhook, secret, message, imageUrl) {
+        showStatus('正在发送消息...', 'loading');
+        
+        try {
+            const response = await fetch(backendUrl + '/api/send-dingtalk', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    webhook: webhook,
+                    secret: secret,
+                    message: message,
+                    imageUrl: imageUrl
+                })
+            });
+            
+            const result = await response.json();
+            
+            if (result.errcode === 0) {
+                showStatus('消息发送成功！', 'success');
+                // 清空已发送的图片
                 selectedImages = [];
                 currentImageUrl = null;
                 imagePreview.innerHTML = '';
                 imagePreviewContainer.style.display = 'none';
-            });
-            
-            // 清空按钮
-            clearBtn.addEventListener('click', function() {
-                if (confirm('确定要清空所有内容吗？')) {
-                    selectedImages = [];
-                    currentImageUrl = null;
-                    imagePreview.innerHTML = '';
-                    imagePreviewContainer.style.display = 'none';
-                    messageInput.value = '';
-                    hideStatus();
-                }
-            });
-            
-            // 发送消息
-            sendBtn.addEventListener('click', function() {
-                const webhook = webhookInput.value.trim();
-                const secret = secretInput.value.trim();
-                const message = messageInput.value.trim();
-                
-                if (!webhook) {
-                    showStatus('请输入钉钉机器人的Webhook地址', 'error');
-                    return;
-                }
-                
-                if (!secret) {
-                    showStatus('请输入加签密钥', 'error');
-                    return;
-                }
-                
-                if (!message && !currentImageUrl) {
-                    showStatus('请输入消息内容或添加图片', 'error');
-                    return;
-                }
-                
-                // 如果有图片但还未上传完成
-                if (selectedImages.length > 0 && !currentImageUrl) {
-                    showStatus('图片正在上传中，请稍后...', 'error');
-                    return;
-                }
-                
-                // 保存配置到本地存储
-                if (saveConfigCheckbox.checked) {
-                    saveConfigToLocal();
-                }
-                
-                sendMessage(webhook, secret, message, currentImageUrl);
-            });
-            
-            // 发送消息到后端
-            async function sendMessage(webhook, secret, message, imageUrl) {
-                showStatus('正在发送消息...', 'loading');
-                
-                try {
-                    const response = await fetch('http://localhost:5000/api/send-dingtalk', {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                        },
-                        body: JSON.stringify({
-                            webhook: webhook,
-                            secret: secret,
-                            message: message,
-                            imageUrl: imageUrl
-                        })
-                    });
-                    
-                    const result = await response.json();
-                    
-                    if (result.errcode === 0) {
-                        showStatus('消息发送成功！', 'success');
-                        // 清空已发送的图片
-                        selectedImages = [];
-                        currentImageUrl = null;
-                        imagePreview.innerHTML = '';
-                        imagePreviewContainer.style.display = 'none';
-                    } else {
-                        showStatus('发送失败: ' + result.errmsg, 'error');
-                    }
-                } catch (error) {
-                    console.error('Error:', error);
-                    showStatus('发送失败，请检查网络连接和配置信息', 'error');
-                }
+                // 重置文件输入框
+                imageInput.value = '';
+            } else {
+                showStatus('发送失败: ' + result.errmsg, 'error');
             }
-            
-            // 将文件转换为Base64
-            function fileToBase64(file) {
-                return new Promise((resolve, reject) => {
-                    const reader = new FileReader();
-                    reader.readAsDataURL(file);
-                    reader.onload = () => resolve(reader.result);
-                    reader.onerror = error => reject(error);
-                });
-            }
-            
-            // 保存配置到本地存储
-            function saveConfigToLocal() {
-                const config = {
-                    webhook: webhookInput.value,
-                    secret: secretInput.value
-                };
-                localStorage.setItem('dingtalkBotConfig', JSON.stringify(config));
-            }
-            
-            // 从本地存储加载配置
-            function loadSavedConfig() {
-                const savedConfig = localStorage.getItem('dingtalkBotConfig');
-                if (savedConfig) {
-                    const config = JSON.parse(savedConfig);
-                    webhookInput.value = config.webhook || '';
-                    secretInput.value = config.secret || '';
-                    saveConfigCheckbox.checked = true;
-                }
-            }
-            
-            // 显示状态消息
-            function showStatus(text, type) {
-                status.textContent = text;
-                status.className = 'status ' + type;
-                status.style.display = 'block';
-            }
-            
-            // 隐藏状态消息
-            function hideStatus() {
-                status.style.display = 'none';
-            }
+        } catch (error) {
+            console.error('Error:', error);
+            showStatus('发送失败，请检查网络连接和配置信息', 'error');
+        }
+    }
+    
+    // 将文件转换为Base64
+    function fileToBase64(file) {
+        return new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.readAsDataURL(file);
+            reader.onload = () => resolve(reader.result);
+            reader.onerror = error => reject(error);
         });
+    }
+    
+    // 保存配置到本地存储
+    function saveConfigToLocal() {
+        const config = {
+            webhook: webhookInput.value,
+            secret: secretInput.value
+        };
+        localStorage.setItem('dingtalkBotConfig', JSON.stringify(config));
+    }
+    
+    // 从本地存储加载配置
+    function loadSavedConfig() {
+        const savedConfig = localStorage.getItem('dingtalkBotConfig');
+        if (savedConfig) {
+            const config = JSON.parse(savedConfig);
+            webhookInput.value = config.webhook || '';
+            secretInput.value = config.secret || '';
+            saveConfigCheckbox.checked = true;
+        }
+    }
+    
+    // 显示状态消息
+    function showStatus(text, type) {
+        status.textContent = text;
+        status.className = 'status ' + type;
+        status.style.display = 'block';
+    }
+    
+    // 隐藏状态消息
+    function hideStatus() {
+        status.style.display = 'none';
+    }
+});
     </script>
 </body>
 </html>
