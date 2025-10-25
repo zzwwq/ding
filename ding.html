@@ -476,6 +476,7 @@ document.addEventListener('DOMContentLoaded', function() {
     
     let selectedImages = [];
     let currentImageUrl = null;
+    let hasDefaultDingtalkConfig = false;
     
     // 动态获取后端API地址
     function getBackendUrl() {
@@ -512,14 +513,21 @@ document.addEventListener('DOMContentLoaded', function() {
                 configStatus.className = 'config-status config-warning';
             }
             
+            // 检查是否有默认钉钉配置
             if (config.dingtalk_configured) {
-                // 如果有默认配置，可以自动填充
-                if (!webhookInput.value) {
-                    webhookInput.placeholder = '已设置默认Webhook（可选填）';
-                }
-                if (!secretInput.value) {
-                    secretInput.placeholder = '已设置默认Secret（可选填）';
-                }
+                hasDefaultDingtalkConfig = true;
+                configStatus.innerHTML += '<br>✅ 钉钉默认配置已设置';
+                
+                // 更新输入框提示
+                webhookInput.placeholder = '已设置默认Webhook（可选填）';
+                secretInput.placeholder = '已设置默认Secret（可选填）';
+                
+                // 如果本地没有保存配置，可以自动填充默认值（可选）
+                // 或者显示一个提示，告知用户可以使用默认配置
+                showStatus('检测到默认钉钉配置，可以直接发送消息', 'success');
+                setTimeout(hideStatus, 3000);
+            } else {
+                configStatus.innerHTML += '<br>⚠️ 钉钉默认配置未设置，需要在页面中手动输入';
             }
             
         } catch (error) {
@@ -675,14 +683,18 @@ document.addEventListener('DOMContentLoaded', function() {
         const secret = secretInput.value.trim();
         const message = messageInput.value.trim();
         
-        if (!webhook) {
-            showStatus('请输入钉钉机器人的Webhook地址', 'error');
-            return;
-        }
-        
-        if (!secret) {
-            showStatus('请输入加签密钥', 'error');
-            return;
+        // 修改验证逻辑：如果有默认配置，允许webhook和secret为空
+        if (!hasDefaultDingtalkConfig) {
+            // 如果没有默认配置，需要用户输入
+            if (!webhook) {
+                showStatus('请输入钉钉机器人的Webhook地址', 'error');
+                return;
+            }
+            
+            if (!secret) {
+                showStatus('请输入加签密钥', 'error');
+                return;
+            }
         }
         
         if (!message && !currentImageUrl) {
@@ -715,8 +727,8 @@ document.addEventListener('DOMContentLoaded', function() {
                     'Content-Type': 'application/json',
                 },
                 body: JSON.stringify({
-                    webhook: webhook,
-                    secret: secret,
+                    webhook: webhook || '',  // 如果为空，后端会使用默认值
+                    secret: secret || '',    // 如果为空，后端会使用默认值
                     message: message,
                     imageUrl: imageUrl
                 })
